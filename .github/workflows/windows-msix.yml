@@ -9,10 +9,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup .NET 10
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '10.0.x'
 
@@ -24,33 +24,39 @@ jobs:
         shell: pwsh
         run: dotnet restore Stemplingsur.csproj
 
-      - name: Create temporary signing certificate
+      - name: Create code-signing certificate
         id: cert
         shell: pwsh
         run: |
           $certDir = Join-Path $env:RUNNER_TEMP 'timekonto-cert'
           New-Item -ItemType Directory -Force -Path $certDir | Out-Null
 
-          $password = [Guid]::NewGuid().ToString('N') + [Guid]::NewGuid().ToString('N')
-          $secure = ConvertTo-SecureString -String $password -Force -AsPlainText
-
+          # Publisher MUST exactly match Package.appxmanifest: Publisher="CN=timeKONTO"
           $cert = New-SelfSignedCertificate `
-            -Type Custom `
-            -Subject 'CN=timeKONTO Stemplingsur' `
-            -KeyUsage DigitalSignature `
-            -FriendlyName 'timeKONTO Stemplingsur' `
+            -Type CodeSigningCert `
+            -Subject 'CN=timeKONTO' `
+            -FriendlyName 'timeKONTO Stemplingsur MSIX' `
             -CertStoreLocation 'Cert:\CurrentUser\My' `
-            -TextExtension @('2.5.29.19={text}false','2.5.29.37={text}1.3.6.1.5.5.7.3.3')
+            -KeyAlgorithm RSA `
+            -KeyLength 2048 `
+            -KeyExportPolicy Exportable `
+            -KeySpec Signature `
+            -HashAlgorithm SHA256 `
+            -NotAfter (Get-Date).AddYears(3)
 
-          $pfx = Join-Path $certDir 'timeKONTO-Stemplingsur.pfx'
+          if (-not $cert) {
+            throw 'Kunne ikke opprette kode-signeringsertifikat.'
+          }
+
           $cer = Join-Path $certDir 'timeKONTO-Stemplingsur.cer'
-
-          Export-PfxCertificate -Cert $cert -FilePath $pfx -Password $secure | Out-Null
           Export-Certificate -Cert $cert -FilePath $cer | Out-Null
 
-          "pfx=$pfx" >> $env:GITHUB_OUTPUT
+          Write-Host "Certificate subject: $($cert.Subject)"
+          Write-Host "Certificate thumbprint: $($cert.Thumbprint)"
+          Write-Host "Enhanced Key Usage: $($cert.EnhancedKeyUsageList | ForEach-Object FriendlyName)"
+
           "cer=$cer" >> $env:GITHUB_OUTPUT
-          "password=$password" >> $env:GITHUB_OUTPUT
+          "thumbprint=$($cert.Thumbprint)" >> $env:GITHUB_OUTPUT
 
       - name: Publish signed MSIX x64
         shell: pwsh
@@ -62,8 +68,7 @@ jobs:
             -p:WindowsPackageType=MSIX `
             -p:GenerateAppxPackageOnBuild=true `
             -p:AppxPackageSigningEnabled=true `
-            -p:PackageCertificateKeyFile="${{ steps.cert.outputs.pfx }}" `
-            -p:PackageCertificatePassword="${{ steps.cert.outputs.password }}" `
+            -p:PackageCertificateThumbprint="${{ steps.cert.outputs.thumbprint }}" `
             -p:AppxBundle=Never `
             -p:UapAppxPackageBuildMode=SideloadOnly
 
@@ -88,14 +93,20 @@ jobs:
           @'
           timeKONTO Stemplingsur - Windows
 
-          1. Installer timeKONTO-Stemplingsur.cer i sertifikatlageret "Trusted People" på maskinen.
-          2. Dobbeltklikk timeKONTO-Stemplingsur-x64.msix og velg Installer.
+          Første installasjon på en Windows-maskin:
+          1. Dobbeltklikk timeKONTO-Stemplingsur.cer.
+          2. Velg Installer sertifikat.
+          3. Velg Lokal maskin hvis du har administratorrettigheter, ellers Gjeldende bruker.
+          4. Velg Plasser alle sertifikater i følgende lager.
+          5. Velg Klarerte personer (Trusted People).
+          6. Fullfør sertifikatinstallasjonen.
+          7. Dobbeltklikk timeKONTO-Stemplingsur-x64.msix og velg Installer.
 
           Sertifikatet er selvsignert og laget for intern installasjon/testing.
           '@ | Set-Content -Path (Join-Path $out 'INSTALLER.txt') -Encoding UTF8
 
       - name: Upload MSIX installer
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: timeKONTO-Stemplingsur-Windows-MSIX
           path: ${{ runner.temp }}\timeKONTO-MSIX\*
