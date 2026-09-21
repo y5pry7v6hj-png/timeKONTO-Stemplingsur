@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage x:Class="Stemplingsur.Views.ClockPage"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:Stemplingsur.ViewModels"
+             xmlns:services="clr-namespace:Stemplingsur.Services"
+             x:DataType="viewmodels:ClockViewModel"
+             BackgroundColor="{StaticResource Cream}">
+    <ScrollView>
+        <VerticalStackLayout Padding="24" Spacing="12" WidthRequest="770" MaximumWidthRequest="770" HorizontalOptions="Center">
+            <Label Text="{Binding Title}"
+                   FontSize="13"
+                   FontAttributes="Bold"
+                   TextColor="{StaticResource PubGreen}"
+                   HorizontalTextAlignment="Center" />
+
+            <Label Text="{Binding Name}"
+                   FontSize="30"
+                   FontAttributes="Bold"
+                   TextColor="{StaticResource Ink}"
+                   HorizontalTextAlignment="Center" />
+
+            <!-- Alt samlet i ett kompakt kort. -->
+            <Border BackgroundColor="White"
+                    Stroke="#E3DED2"
+                    StrokeShape="RoundRectangle 20"
+                    Padding="18">
+                <VerticalStackLayout Spacing="12">
+
+                    <Border IsVisible="{Binding IsClockOut}"
+                            BackgroundColor="#EEF3F0"
+                            StrokeThickness="0"
+                            StrokeShape="RoundRectangle 10"
+                            Padding="10,8">
+                        <Label Text="{Binding ClockInReference}"
+                               FontSize="12"
+                               TextColor="{StaticResource PubGreen}"
+                               FontAttributes="Bold" />
+                    </Border>
+
+                    <HorizontalStackLayout Spacing="18">
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="Dato"
+                                   FontSize="12"
+                                   FontAttributes="Bold"
+                                   TextColor="{StaticResource Ink}" />
+                            <Border BackgroundColor="White"
+                                    Stroke="#D8D5CC"
+                                    StrokeThickness="1"
+                                    StrokeShape="RoundRectangle 10"
+                                    Padding="12,6"
+                                    WidthRequest="180"
+                                    HeightRequest="54">
+                                <Entry x:Name="DateEntry"
+                                       Placeholder="dd.MM.yyyy"
+                                       PlaceholderColor="#8A938E"
+                                       TextColor="#111111"
+                                       BackgroundColor="Transparent"
+                                       FontSize="16"
+                                       HorizontalTextAlignment="Center"
+                                       VerticalTextAlignment="Center"
+                                       Keyboard="Text"
+                                       MaxLength="10"
+                                       ReturnType="Next"
+                                       Loaded="OnDateEntryLoaded"
+                                       TextChanged="OnDateEntryTextChanged" />
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="Klokkeslett"
+                                   FontSize="12"
+                                   FontAttributes="Bold"
+                                   TextColor="{StaticResource Ink}" />
+                            <Border BackgroundColor="White"
+                                    Stroke="#D8D5CC"
+                                    StrokeThickness="1"
+                                    StrokeShape="RoundRectangle 10"
+                                    Padding="12,6"
+                                    WidthRequest="130"
+                                    HeightRequest="54">
+                                <Entry x:Name="TimeEntry"
+                                       Placeholder="HH:mm"
+                                       PlaceholderColor="#8A938E"
+                                       TextColor="#111111"
+                                       BackgroundColor="Transparent"
+                                       FontSize="16"
+                                       HorizontalTextAlignment="Center"
+                                       VerticalTextAlignment="Center"
+                                       Keyboard="Text"
+                                       MaxLength="5"
+                                       ReturnType="Next"
+                                       Loaded="OnTimeEntryLoaded"
+                                       TextChanged="OnTimeEntryTextChanged" />
+                            </Border>
+                        </VerticalStackLayout>
+                    </HorizontalStackLayout>
+
+                    <!-- Hurtigtider på samme linje som SETT TIL NÅ. -->
+                    <HorizontalStackLayout IsVisible="{Binding IsClockIn}" Spacing="7">
+                        <Button Text="SETT TIL NÅ" FontSize="11" HeightRequest="40" Padding="12,6"
+                                BackgroundColor="#EEF3F0" TextColor="{StaticResource PubGreen}"
+                                Command="{Binding SetNowCommand}" />
+                        <Button Text="{x:Static services:ApiSettings.QuickTime1}" IsVisible="{x:Static services:ApiSettings.QuickTime1Visible}" Clicked="OnQuickTimeClicked" FontSize="11" HeightRequest="40" Padding="12,6" BackgroundColor="#EEF3F0" TextColor="{StaticResource PubGreen}" />
+                        <Button Text="{x:Static services:ApiSettings.QuickTime2}" IsVisible="{x:Static services:ApiSettings.QuickTime2Visible}" Clicked="OnQuickTimeClicked" FontSize="11" HeightRequest="40" Padding="12,6" BackgroundColor="#EEF3F0" TextColor="{StaticResource PubGreen}" />
+                        <Button Text="{x:Static services:ApiSettings.QuickTime3}" IsVisible="{x:Static services:ApiSettings.QuickTime3Visible}" Clicked="OnQuickTimeClicked" FontSize="11" HeightRequest="40" Padding="12,6" BackgroundColor="#EEF3F0" TextColor="{StaticResource PubGreen}" />
+                        <Button Text="{x:Static services:ApiSettings.QuickTime4}" IsVisible="{x:Static services:ApiSettings.QuickTime4Visible}" Clicked="OnQuickTimeClicked" FontSize="11" HeightRequest="40" Padding="12,6" BackgroundColor="#EEF3F0" TextColor="{StaticResource PubGreen}" />
+                    </HorizontalStackLayout>
+
+                    <HorizontalStackLayout IsVisible="{Binding IsClockOut}" Spacing="7">
+                        <Button Text="SETT TIL NÅ" FontSize="11" HeightRequest="40" Padding="12,6"
+                                BackgroundColor="#EEF3F0" TextColor="{StaticResource PubGreen}"
+                                Command="{Binding SetNowCommand}" />
+                        <Button Text="{x:Static services:ApiSettings.QuickOutTime1}" IsVisible="{x:Static services:ApiSettings.QuickOutTime1Visible}" Clicked="OnQuickTimeClicked" FontSize="11" HeightRequest="40" Padding="12,6" BackgroundColor="#EEF3F0" TextColor="{StaticResource PubGreen}" />
+                        <Button Text="{x:Static services:ApiSettings.QuickOutTime2}" IsVisible="{x:Static services:ApiSettings.QuickOutTime2Visible}" Clicked="OnQuickTimeClicked" FontSize="11" HeightRequest="40" Padding="12,6" BackgroundColor="#EEF3F0" TextColor="{StaticResource PubGreen}" />
+                        <Button Text="{x:Static services:ApiSettings.QuickOutTime3}" IsVisible="{x:Static services:ApiSettings.QuickOutTime3Visible}" Clicked="OnQuickTimeClicked" FontSize="11" HeightRequest="40" Padding="12,6" BackgroundColor="#EEF3F0" TextColor="{StaticResource PubGreen}" />
+                        <Button Text="{x:Static services:ApiSettings.QuickOutTime4}" IsVisible="{x:Static services:ApiSettings.QuickOutTime4Visible}" Clicked="OnQuickTimeClicked" FontSize="11" HeightRequest="40" Padding="12,6" BackgroundColor="#EEF3F0" TextColor="{StaticResource PubGreen}" />
+                    </HorizontalStackLayout>
+
+                    <BoxView HeightRequest="1" Color="#E8E4DA" />
+
+                    <Label Text="{Binding CommentLabel}"
+                           FontAttributes="Bold"
+                           FontSize="14"
+                           TextColor="{StaticResource Ink}" />
+
+                    <Border BackgroundColor="White"
+                            Stroke="#D8D5CC"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 10"
+                            Padding="12,8">
+                        <Editor Text="{Binding Comment}"
+                                Placeholder="Skriv kommentar her …"
+                                AutoSize="TextChanges"
+                                MinimumHeightRequest="72"
+                                MaxLength="2000"
+                                BackgroundColor="Transparent"
+                                TextColor="Black"
+                                PlaceholderColor="#8A938E" />
+                    </Border>
+
+                    <Border IsVisible="{Binding HasError}"
+                            BackgroundColor="#FFF0EC"
+                            Stroke="#D77A61"
+                            StrokeShape="RoundRectangle 12"
+                            Padding="10">
+                        <Label Text="{Binding Error}" TextColor="#8B3323" FontSize="12" />
+                    </Border>
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                        <Button Text="AVBRYT"
+                                HeightRequest="46"
+                                BackgroundColor="#DFDDD6"
+                                TextColor="{StaticResource Ink}"
+                                Command="{Binding CancelCommand}" />
+                        <Button Grid.Column="1"
+                                Text="{Binding Title}"
+                                HeightRequest="46"
+                                BackgroundColor="{StaticResource PubGreen}"
+                                TextColor="White"
+                                Command="{Binding SaveCommand}" />
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

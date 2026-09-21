@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage
+    x:Class="Stemplingsur.Views.MainPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:models="clr-namespace:Stemplingsur.Models"
+    xmlns:viewmodels="clr-namespace:Stemplingsur.ViewModels"
+    xmlns:views="clr-namespace:Stemplingsur.Views"
+    x:Name="RootPage"
+    x:DataType="viewmodels:MainViewModel"
+    Title="timeKONTO Stemplingsur"
+    BackgroundColor="{StaticResource Cream}">
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <Color x:Key="PubGreen">#123D31</Color>
+            <Color x:Key="Cream">#F5F1E8</Color>
+            <Color x:Key="Card">#FFFFFF</Color>
+            <Color x:Key="Ink">#17211D</Color>
+            <Color x:Key="Muted">#6C7772</Color>
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="Auto,*" Padding="28" RowSpacing="24">
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="18">
+            <VerticalStackLayout Spacing="2">
+                <Label Text="timeKONTO" FontSize="18" FontAttributes="Bold" TextColor="{StaticResource PubGreen}" />
+                <Label Text="STEMPLINGSUR" FontSize="32" FontAttributes="Bold" TextColor="{StaticResource Ink}" />
+                <Label Text="8.5 · .NET MAUI" FontSize="13" TextColor="{StaticResource Muted}" />
+            </VerticalStackLayout>
+            <VerticalStackLayout Grid.Column="1" HorizontalOptions="End" Spacing="0">
+                <Label Text="{Binding ClockText}" FontSize="42" FontAttributes="Bold" HorizontalTextAlignment="End" TextColor="{StaticResource PubGreen}" />
+                <Label Text="{Binding DateText}" FontSize="15" HorizontalTextAlignment="End" TextColor="{StaticResource Muted}" />
+            </VerticalStackLayout>
+            <Button Grid.Column="2" Text="⚙" FontSize="24" WidthRequest="52" HeightRequest="52"
+                    BackgroundColor="#EEF3F0" TextColor="{StaticResource PubGreen}"
+                    Clicked="OnSettingsClicked" VerticalOptions="Center" />
+        </Grid>
+
+        <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="22">
+            <Border Grid.Column="0" BackgroundColor="{StaticResource Card}" Stroke="#E3DED2" StrokeThickness="1" Padding="20" StrokeShape="RoundRectangle 22">
+                <Grid RowDefinitions="Auto,*" RowSpacing="14">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Text="MEDARBEIDERE" FontAttributes="Bold" FontSize="17" TextColor="{StaticResource Ink}" />
+                        <Label Grid.Column="1" Text="Trykk for å stemple inn" FontSize="12" TextColor="{StaticResource Muted}" VerticalOptions="Center" />
+                    </Grid>
+                    <CollectionView Grid.Row="1" ItemsSource="{Binding Employees}" SelectionMode="None">
+                        <CollectionView.EmptyView><Label Text="Alle er på jobb." Margin="8,20" TextColor="{StaticResource Muted}" /></CollectionView.EmptyView>
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="models:Employee">
+                                <Button Text="{Binding DisplayName}" Margin="0,5" BackgroundColor="#EEF3F0" TextColor="{StaticResource PubGreen}" Command="{Binding Source={x:Reference RootPage}, Path=ClockInCommand, x:DataType={x:Type views:MainPage}}" CommandParameter="{Binding .}" />
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </Grid>
+            </Border>
+
+            <Border Grid.Column="1" BackgroundColor="{StaticResource PubGreen}" StrokeThickness="0" Padding="20" StrokeShape="RoundRectangle 22">
+                <Grid RowDefinitions="Auto,*,Auto" RowSpacing="14">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Text="PÅ JOBB" FontAttributes="Bold" FontSize="17" TextColor="White" />
+                        <Label Grid.Column="1" Text="{Binding ActiveCount, StringFormat='{0} på jobb'}" FontSize="13" TextColor="#CFE0D9" VerticalOptions="Center" />
+                    </Grid>
+                    <CollectionView Grid.Row="1" ItemsSource="{Binding ActiveEntries}" SelectionMode="None">
+                        <CollectionView.EmptyView><Label Text="Ingen er stemplet inn." Margin="8,20" TextColor="#CFE0D9" /></CollectionView.EmptyView>
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="models:TimeEntry">
+                                <Border Margin="0,5" Padding="14,10" BackgroundColor="#1B5746" StrokeThickness="0" StrokeShape="RoundRectangle 14">
+                                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                                        <Label Text="{Binding EmployeeName}" FontAttributes="Bold" FontSize="16" TextColor="White" />
+                                        <Label Grid.Row="1" Text="{Binding ClockInText}" FontSize="12" TextColor="#CFE0D9" />
+                                        <Button Grid.Column="1" Grid.RowSpan="2" Text="STEMPLE UT" Padding="16,0" HeightRequest="44" BackgroundColor="#F5F1E8" TextColor="{StaticResource PubGreen}" Command="{Binding Source={x:Reference RootPage}, Path=ClockOutCommand, x:DataType={x:Type views:MainPage}}" CommandParameter="{Binding .}" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                    <Label Grid.Row="2" Text="{Binding StatusText}" FontSize="12" TextColor="#CFE0D9" HorizontalOptions="Center" />
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</ContentPage>

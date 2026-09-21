@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage x:Class="Stemplingsur.Views.SettingsPage"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             Title="Innstillinger"
+             BackgroundColor="#F5F1E8">
+    <ScrollView>
+        <VerticalStackLayout Padding="28" Spacing="18" WidthRequest="1000" MaximumWidthRequest="1000" HorizontalOptions="Center">
+            <Label Text="INNSTILLINGER" FontSize="28" FontAttributes="Bold" TextColor="#17211D" />
+            <Label Text="Tilkobling til stemplings-API" FontSize="14" TextColor="#6C7772" />
+
+            <Border BackgroundColor="White" Stroke="#E3DED2" Padding="22" StrokeShape="RoundRectangle 22">
+                <VerticalStackLayout Spacing="14">
+                    <Label Text="API-adresse" FontAttributes="Bold" TextColor="#17211D" />
+                    <Entry x:Name="BaseUrlEntry" BackgroundColor="White" TextColor="#17211D" Placeholder="https://.../api/index.php" />
+
+                    <Label Text="API-nøkkel" FontAttributes="Bold" TextColor="#17211D" Margin="0,6,0,0" />
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <Entry x:Name="ApiKeyEntry" IsPassword="True" BackgroundColor="White" TextColor="#17211D" Placeholder="API-nøkkel" />
+                        <Button Grid.Column="1" Text="VIS" Clicked="OnToggleKeyClicked" BackgroundColor="#EEF3F0" TextColor="#123D31" />
+                    </Grid>
+
+
+                    <BoxView HeightRequest="1" Color="#E8E4DA" Margin="0,6,0,2" />
+
+                    <Label Text="WebCal / ICS-kalendere" FontAttributes="Bold" TextColor="#17211D" />
+                    <Entry x:Name="CalendarUrlEntry"
+                           BackgroundColor="White"
+                           TextColor="#17211D"
+                           Placeholder="webcal://kalender1…, webcal://kalender2…"
+                           Keyboard="Url" />
+                    <Label Text="Valgfritt. Flere kalendere skilles med komma. Hendelser fra alle kalenderne slås sammen."
+                           FontSize="12"
+                           TextColor="#6C7772" />
+
+                    <HorizontalStackLayout Spacing="10" VerticalOptions="Center">
+                        <Label Text="Arbeidsdøgn slutter kl."
+                               FontAttributes="Bold"
+                               TextColor="#17211D"
+                               VerticalTextAlignment="Center" />
+                        <Entry x:Name="CalendarCutoffEntry"
+                               WidthRequest="100"
+                               MaxLength="5"
+                               Placeholder="06:00"
+                               HorizontalTextAlignment="Center"
+                               BackgroundColor="White"
+                               TextColor="#17211D" />
+                    </HorizontalStackLayout>
+                    <Label Text="Hendelser etter midnatt og før denne tiden regnes som del av arbeidsdagen før. Eksempel: 02:30 vises sammen med gårsdagens hendelser når grensen er 06:00."
+                           FontSize="12"
+                           TextColor="#6C7772" />
+                    <Button Text="TEST KALENDERE"
+                            Clicked="OnTestCalendarClicked"
+                            BackgroundColor="#EEF3F0"
+                            TextColor="#123D31"
+                            HorizontalOptions="Start"
+                            Padding="18,8" />
+
+                    <BoxView HeightRequest="1" Color="#E8E4DA" Margin="0,6,0,2" />
+
+                    <Label Text="Hurtigtider ved innstempling" FontAttributes="Bold" TextColor="#17211D" />
+                    <Label Text="Vises på samme linje som «SETT TIL NÅ» ved innstempling. La et felt stå tomt for å skjule knappen." FontSize="12" TextColor="#6C7772" />
+                    <Grid ColumnDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="10">
+                        <Entry x:Name="QuickTime1Entry" WidthRequest="100" MaxLength="5" Placeholder="18:45" Keyboard="Text" HorizontalTextAlignment="Center" BackgroundColor="White" TextColor="#17211D" />
+                        <Entry x:Name="QuickTime2Entry" Grid.Column="1" WidthRequest="100" MaxLength="5" Placeholder="19:00" Keyboard="Text" HorizontalTextAlignment="Center" BackgroundColor="White" TextColor="#17211D" />
+                        <Entry x:Name="QuickTime3Entry" Grid.Column="2" WidthRequest="100" MaxLength="5" Placeholder="21:00" Keyboard="Text" HorizontalTextAlignment="Center" BackgroundColor="White" TextColor="#17211D" />
+                        <Entry x:Name="QuickTime4Entry" Grid.Column="3" WidthRequest="100" MaxLength="5" Placeholder="22:00" Keyboard="Text" HorizontalTextAlignment="Center" BackgroundColor="White" TextColor="#17211D" />
+                    </Grid>
+
+                    <Label Text="Hurtigtider ved utstempling" FontAttributes="Bold" TextColor="#17211D" Margin="0,4,0,0" />
+                    <Label Text="Vises på samme linje som «SETT TIL NÅ» ved utstempling. La et felt stå tomt for å skjule knappen." FontSize="12" TextColor="#6C7772" />
+                    <Grid ColumnDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="10">
+                        <Entry x:Name="QuickOutTime1Entry" WidthRequest="100" MaxLength="5" Placeholder="19:00" Keyboard="Text" HorizontalTextAlignment="Center" BackgroundColor="White" TextColor="#17211D" />
+                        <Entry x:Name="QuickOutTime2Entry" Grid.Column="1" WidthRequest="100" MaxLength="5" Placeholder="02:30" Keyboard="Text" HorizontalTextAlignment="Center" BackgroundColor="White" TextColor="#17211D" />
+                        <Entry x:Name="QuickOutTime3Entry" Grid.Column="2" WidthRequest="100" MaxLength="5" Placeholder="02:45" Keyboard="Text" HorizontalTextAlignment="Center" BackgroundColor="White" TextColor="#17211D" />
+                        <Entry x:Name="QuickOutTime4Entry" Grid.Column="3" WidthRequest="100" MaxLength="5" Placeholder="03:00" Keyboard="Text" HorizontalTextAlignment="Center" BackgroundColor="White" TextColor="#17211D" />
+                    </Grid>
+
+                    <Label Text="Administrator-PIN" FontAttributes="Bold" TextColor="#17211D" Margin="0,6,0,0" />
+                    <Entry x:Name="AdminPinEntry" IsPassword="True" Keyboard="Numeric" MaxLength="8" BackgroundColor="White" TextColor="#17211D" />
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10" Margin="0,8,0,0">
+                        <Button Text="TEST TILKOBLING" Clicked="OnTestClicked" BackgroundColor="#EEF3F0" TextColor="#123D31" />
+                        <Button Grid.Column="1" Text="LAGRE" Clicked="OnSaveClicked" BackgroundColor="#123D31" TextColor="White" />
+                    </Grid>
+                    <Label x:Name="StatusLabel" FontSize="13" TextColor="#6C7772" HorizontalTextAlignment="Center" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Button Text="TILBAKE" Clicked="OnBackClicked" BackgroundColor="Transparent" TextColor="#123D31" />
+            <Label Text="timeKONTO Stemplingsur 8.10" FontSize="12" TextColor="#6C7772" HorizontalTextAlignment="Center" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
