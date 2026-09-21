@@ -1,0 +1,118 @@
+name: Windows MSIX
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - '**/*.cs'
+      - '**/*.xaml'
+      - '**/*.csproj'
+      - 'Platforms/Windows/**'
+      - '.github/workflows/windows-msix.yml'
+
+jobs:
+  build-msix:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install MAUI workload
+        shell: pwsh
+        run: dotnet workload install maui
+
+      - name: Restore
+        shell: pwsh
+        run: dotnet restore Stemplingsur.csproj
+
+      - name: Create temporary signing certificate
+        id: cert
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $passwordText = [Guid]::NewGuid().ToString('N') + [Guid]::NewGuid().ToString('N')
+          $password = ConvertTo-SecureString -String $passwordText -Force -AsPlainText
+          $cert = New-SelfSignedCertificate `
+            -Type Custom `
+            -Subject 'CN=timeKONTO' `
+            -FriendlyName 'timeKONTO Stemplingsur GitHub Build' `
+            -KeyUsage DigitalSignature `
+            -CertStoreLocation 'Cert:\CurrentUser\My' `
+            -TextExtension @('2.5.29.37={text}1.3.6.1.5.5.7.3.3')
+
+          New-Item -ItemType Directory -Force -Path "$env:RUNNER_TEMP\timekonto-cert" | Out-Null
+          $pfxPath = "$env:RUNNER_TEMP\timekonto-cert\timeKONTO-Stemplingsur.pfx"
+          $cerPath = "$env:RUNNER_TEMP\timekonto-cert\timeKONTO-Stemplingsur.cer"
+
+          Export-PfxCertificate -Cert $cert -FilePath $pfxPath -Password $password | Out-Null
+          Export-Certificate -Cert $cert -FilePath $cerPath | Out-Null
+
+          "pfx=$pfxPath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "cer=$cerPath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "password=$passwordText" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: Publish signed MSIX x64
+        shell: pwsh
+        run: |
+          dotnet publish Stemplingsur.csproj `
+            -f net10.0-windows10.0.19041.0 `
+            -c Release `
+            -r win-x64 `
+            -p:WindowsPackageType=MSIX `
+            -p:GenerateAppxPackageOnBuild=true `
+            -p:AppxPackageSigningEnabled=true `
+            -p:PackageCertificateKeyFile="${{ steps.cert.outputs.pfx }}" `
+            -p:PackageCertificatePassword="${{ steps.cert.outputs.password }}" `
+            -p:AppxBundle=Never `
+            -p:UapAppxPackageBuildMode=SideloadOnly
+
+      - name: Collect install files
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Force -Path artifact | Out-Null
+
+          $msix = Get-ChildItem -Path . -Recurse -File -Filter *.msix |
+            Where-Object { $_.FullName -notmatch '\\obj\\' } |
+            Sort-Object LastWriteTime -Descending |
+            Select-Object -First 1
+
+          if (-not $msix) {
+            Write-Host 'No MSIX file found. Candidate package files:'
+            Get-ChildItem -Path . -Recurse -File -Include *.msix,*.msixbundle,*.appx,*.appxbundle |
+              Select-Object -ExpandProperty FullName
+            throw 'MSIX package was not produced.'
+          }
+
+          Copy-Item $msix.FullName 'artifact\timeKONTO-Stemplingsur-x64.msix'
+          Copy-Item '${{ steps.cert.outputs.cer }}' 'artifact\timeKONTO-Stemplingsur.cer'
+
+          @'
+          timeKONTO Stemplingsur - Windows x64
+
+          INSTALLASJON (for intern/test-distribusjon)
+          1. Dobbeltklikk timeKONTO-Stemplingsur.cer.
+          2. Velg Installer sertifikat.
+          3. Velg Lokal maskin (krever administrator) eller Gjeldende bruker.
+          4. Velg Plasser alle sertifikater i følgende lager.
+          5. Velg Klarerte personer (Trusted People).
+          6. Fullfoer veiviseren.
+          7. Dobbeltklikk timeKONTO-Stemplingsur-x64.msix og velg Installer.
+
+          Sertifikatet er selvsignert og er ment for intern bruk/testing.
+          '@ | Set-Content -Path 'artifact\INSTALLER.txt' -Encoding UTF8
+
+      - name: Upload MSIX installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: timeKONTO-Stemplingsur-Windows-MSIX-x64
+          path: artifact/*
+          if-no-files-found: error
+          retention-days: 30
