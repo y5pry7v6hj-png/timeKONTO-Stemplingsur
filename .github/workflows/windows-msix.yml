@@ -2,14 +2,6 @@ name: Windows MSIX
 
 on:
   workflow_dispatch:
-  push:
-    branches: [ main ]
-    paths:
-      - '**/*.cs'
-      - '**/*.xaml'
-      - '**/*.csproj'
-      - 'Platforms/Windows/**'
-      - '.github/workflows/windows-msix.yml'
 
 jobs:
   build-msix:
@@ -36,27 +28,29 @@ jobs:
         id: cert
         shell: pwsh
         run: |
-          $ErrorActionPreference = 'Stop'
-          $passwordText = [Guid]::NewGuid().ToString('N') + [Guid]::NewGuid().ToString('N')
-          $password = ConvertTo-SecureString -String $passwordText -Force -AsPlainText
+          $certDir = Join-Path $env:RUNNER_TEMP 'timekonto-cert'
+          New-Item -ItemType Directory -Force -Path $certDir | Out-Null
+
+          $password = [Guid]::NewGuid().ToString('N') + [Guid]::NewGuid().ToString('N')
+          $secure = ConvertTo-SecureString -String $password -Force -AsPlainText
+
           $cert = New-SelfSignedCertificate `
             -Type Custom `
-            -Subject 'CN=timeKONTO' `
-            -FriendlyName 'timeKONTO Stemplingsur GitHub Build' `
+            -Subject 'CN=timeKONTO Stemplingsur' `
             -KeyUsage DigitalSignature `
+            -FriendlyName 'timeKONTO Stemplingsur' `
             -CertStoreLocation 'Cert:\CurrentUser\My' `
-            -TextExtension @('2.5.29.37={text}1.3.6.1.5.5.7.3.3')
+            -TextExtension @('2.5.29.19={text}false','2.5.29.37={text}1.3.6.1.5.5.7.3.3')
 
-          New-Item -ItemType Directory -Force -Path "$env:RUNNER_TEMP\timekonto-cert" | Out-Null
-          $pfxPath = "$env:RUNNER_TEMP\timekonto-cert\timeKONTO-Stemplingsur.pfx"
-          $cerPath = "$env:RUNNER_TEMP\timekonto-cert\timeKONTO-Stemplingsur.cer"
+          $pfx = Join-Path $certDir 'timeKONTO-Stemplingsur.pfx'
+          $cer = Join-Path $certDir 'timeKONTO-Stemplingsur.cer'
 
-          Export-PfxCertificate -Cert $cert -FilePath $pfxPath -Password $password | Out-Null
-          Export-Certificate -Cert $cert -FilePath $cerPath | Out-Null
+          Export-PfxCertificate -Cert $cert -FilePath $pfx -Password $secure | Out-Null
+          Export-Certificate -Cert $cert -FilePath $cer | Out-Null
 
-          "pfx=$pfxPath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-          "cer=$cerPath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-          "password=$passwordText" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "pfx=$pfx" >> $env:GITHUB_OUTPUT
+          "cer=$cer" >> $env:GITHUB_OUTPUT
+          "password=$password" >> $env:GITHUB_OUTPUT
 
       - name: Publish signed MSIX x64
         shell: pwsh
@@ -64,7 +58,7 @@ jobs:
           dotnet publish Stemplingsur.csproj `
             -f net10.0-windows10.0.19041.0 `
             -c Release `
-            -r win-x64 `
+            -p:RuntimeIdentifierOverride=win-x64 `
             -p:WindowsPackageType=MSIX `
             -p:GenerateAppxPackageOnBuild=true `
             -p:AppxPackageSigningEnabled=true `
@@ -76,43 +70,33 @@ jobs:
       - name: Collect install files
         shell: pwsh
         run: |
-          $ErrorActionPreference = 'Stop'
-          New-Item -ItemType Directory -Force -Path artifact | Out-Null
+          $out = Join-Path $env:RUNNER_TEMP 'timeKONTO-MSIX'
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
 
-          $msix = Get-ChildItem -Path . -Recurse -File -Filter *.msix |
-            Where-Object { $_.FullName -notmatch '\\obj\\' } |
+          $msix = Get-ChildItem -Path . -Recurse -Filter *.msix |
+            Where-Object { $_.FullName -match 'AppPackages' } |
             Sort-Object LastWriteTime -Descending |
             Select-Object -First 1
 
           if (-not $msix) {
-            Write-Host 'No MSIX file found. Candidate package files:'
-            Get-ChildItem -Path . -Recurse -File -Include *.msix,*.msixbundle,*.appx,*.appxbundle |
-              Select-Object -ExpandProperty FullName
-            throw 'MSIX package was not produced.'
+            throw 'Fant ingen MSIX-fil under AppPackages etter publish.'
           }
 
-          Copy-Item $msix.FullName 'artifact\timeKONTO-Stemplingsur-x64.msix'
-          Copy-Item '${{ steps.cert.outputs.cer }}' 'artifact\timeKONTO-Stemplingsur.cer'
+          Copy-Item $msix.FullName (Join-Path $out 'timeKONTO-Stemplingsur-x64.msix')
+          Copy-Item "${{ steps.cert.outputs.cer }}" (Join-Path $out 'timeKONTO-Stemplingsur.cer')
 
           @'
-          timeKONTO Stemplingsur - Windows x64
+          timeKONTO Stemplingsur - Windows
 
-          INSTALLASJON (for intern/test-distribusjon)
-          1. Dobbeltklikk timeKONTO-Stemplingsur.cer.
-          2. Velg Installer sertifikat.
-          3. Velg Lokal maskin (krever administrator) eller Gjeldende bruker.
-          4. Velg Plasser alle sertifikater i følgende lager.
-          5. Velg Klarerte personer (Trusted People).
-          6. Fullfoer veiviseren.
-          7. Dobbeltklikk timeKONTO-Stemplingsur-x64.msix og velg Installer.
+          1. Installer timeKONTO-Stemplingsur.cer i sertifikatlageret "Trusted People" på maskinen.
+          2. Dobbeltklikk timeKONTO-Stemplingsur-x64.msix og velg Installer.
 
-          Sertifikatet er selvsignert og er ment for intern bruk/testing.
-          '@ | Set-Content -Path 'artifact\INSTALLER.txt' -Encoding UTF8
+          Sertifikatet er selvsignert og laget for intern installasjon/testing.
+          '@ | Set-Content -Path (Join-Path $out 'INSTALLER.txt') -Encoding UTF8
 
       - name: Upload MSIX installer
         uses: actions/upload-artifact@v4
         with:
-          name: timeKONTO-Stemplingsur-Windows-MSIX-x64
-          path: artifact/*
+          name: timeKONTO-Stemplingsur-Windows-MSIX
+          path: ${{ runner.temp }}\timeKONTO-MSIX\*
           if-no-files-found: error
-          retention-days: 30
